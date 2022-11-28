@@ -1,0 +1,53 @@
+name: phpcs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  phpcs:
+    name: Run lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Source checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP with tools
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: cache vendor
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: composer install
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: composer install -n --prefer-dist
+
+      - name: composer dump autoload
+        run: composer dump-autoload
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest
+
+      - name: check lint
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./vendor/bin/phpcs --standard=phpcs.xml --report=emacs ./ \
+            | reviewdog -reporter=github-pr-review -efm='%f:%l:%c:%m' -fail-on-error=true

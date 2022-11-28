@@ -1,0 +1,60 @@
+name: UnitTest
+
+on: [push]
+
+jobs:
+  unittest:
+    name: Run test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        ports:
+          - 3306:3306
+        options: --health-cmd "mysqladmin ping -h localhost" --health-interval 20s --health-timeout 10s --health-retries 10
+        env:
+          MYSQL_DATABASE: laravel_testing
+          MYSQL_ROOT_PASSWORD: password
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: laravel_testing
+      DB_USERNAME: root
+      DB_PASSWORD: password
+
+    steps:
+      - name: Source checkout
+        uses: actions/checkout@v2
+
+      - name: Setup PHP with tools
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+
+      - name: cache vendor
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ./vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: composer install
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: composer install -n --prefer-dist
+
+      - name: composer dump autoload
+        run: composer dump-autoload
+
+      - name: generate key
+        run: php artisan key:generate --env=testing
+
+      - name: migrate
+        run: php artisan migrate --env=testing --force
+
+      - name: unit test
+        run: php artisan test

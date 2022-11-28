@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  nginx:
+    build:
+      context: ${CONTEXT}
+      dockerfile: ./docker/nginx/Dockerfile
+    restart: "no"
+    depends_on:
+      - php
+    ports:
+      - 80:80
+    volumes:
+      - ${CONTEXT}/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${CONTEXT}/public:/app/public:ro
+    networks:
+      - shared-network
+      - default
+
+  php:
+    build:
+      context: ${CONTEXT}
+      dockerfile: ./docker/php/Dockerfile
+    restart: "no"
+    depends_on:
+      - db
+    volumes:
+      - ${CONTEXT}:/app
+      - ${CONTEXT}/docker/php/php.ini:/usr/local/etc/php/php.ini:ro
+      - framework_cache_volume:/app/storage/framework/cache/data:delegated
+      - vendor_volume:/app/vendor:delegated
+    networks:
+      - shared-network
+      - default
+
+  db:
+    platform: linux/amd64
+    image: mysql/mysql-server:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: phper
+      MYSQL_PASSWORD: secret
+    volumes:
+      - db-data57:/var/lib/mysql
+    networks:
+      - shared-network
+      - default
+
+  test-db:
+    platform: linux/amd64
+    image: mysql/mysql-server:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: phper
+      MYSQL_PASSWORD: secret
+    volumes:
+      - db-data57-testing:/var/lib/mysql
+    networks:
+      - shared-network
+      - default
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=phper
+      - PMA_PASSWORD=secret
+    ports:
+      - 8085:80
+    networks:
+      - shared-network
+      - default
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - 8025:8025
+    networks:
+      - shared-network
+      - default
+
+volumes:
+  framework_cache_volume:
+  vendor_volume:
+  db-data57: null
+  db-data57-testing: null
+
+networks:
+  shared-network:
+    name: ${DOCKER_NETWORK_NAME}

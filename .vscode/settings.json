@@ -1,0 +1,18 @@
+{
+    // phpcsチェック有効化
+    "phpcs.enable": true,
+    "phpcs.standard": "./phpcs.xml",
+
+    // タブをスペース4つに指定
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+
+    // 空白文字を可視化
+    "editor.renderWhitespace": "all",
+
+    // Markdown以外は保存時に末尾空白を削除
+    "files.trimTrailingWhitespace": true,
+    "[markdown]": {
+        "files.trimTrailingWhitespace": false
+    }
+}
