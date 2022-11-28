@@ -40,6 +40,7 @@ PROJECT_NAME="project-null"
 ### 初期セットアップコマンドを実行する
 
 ```console
+sh ./setup.sh
 make init
 ```
 
